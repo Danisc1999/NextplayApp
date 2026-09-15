@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  html, body { margin:0; background:#08080A; font-family:'Instrument Sans', system-ui, sans-serif; height:100%; }
+  a { color:#FF5A2D; text-decoration:none; }
+  a:hover { color:#FF8A63; }
+  input { font-family:'Instrument Sans', sans-serif; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#08080A;color:#F2EFEA">
+
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:100vh">
+      <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#6E6C76">Nextplay</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px">
+      <div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:22px">
+        <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Instrument Serif',serif;font-size:36px">Nextplay</div>
+          <div style="font-size:14px;color:#8C8A93">Te mandamos un enlace de acceso, sin contraseña.</div>
+        </div>
+        <sc-if value="{{ isCodeStep }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;font-size:13.5px;color:#C8C5CE;line-height:1.5">Toca el enlace del correo desde este mismo dispositivo para entrar.</div>
+          <div onClick="{{ resendCode }}" style="text-align:center;font-size:13px;color:{{ resendColor }};cursor:{{ resendCursor }};padding-top:4px">{{ resendLabel }}</div>
+        </sc-if>
+        <sc-if value="{{ isEmailStep }}" hint-placeholder-val="{{ true }}">
+          <input value="{{ emailValue }}" onChange="{{ onEmailChange }}" placeholder="tu@correo.com" style="height:50px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.14);padding:0 16px;font-size:15px;color:#F2EFEA;outline:none" />
+          <div onClick="{{ sendMagicLink }}" style="height:50px;border-radius:12px;background:#FF5A2D;color:#08080A;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer">Enviarme el código</div>
+        </sc-if>
+        <div style="font-size:13px;color:#FF8A63;text-align:center;min-height:16px">{{ authMessage }}</div>
+        <div onClick="{{ startDemo }}" style="text-align:center;font-size:13px;color:#6E6C76;cursor:pointer;padding-top:10px;text-decoration:underline">Probar sin iniciar sesión (modo demo)</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px">
+      <div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px">
+        <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Instrument Serif',serif;font-size:30px">Crea tu perfil</div>
+          <div style="font-size:14px;color:#8C8A93">Así verás tus propias recomendaciones y valoraciones.</div>
+        </div>
+        <label style="display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer">
+          <div style="width:76px;height:76px;border-radius:50%;border:1.5px dashed rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:12px;color:#8C8A93;text-align:center;background-size:cover;background-position:center;background-repeat:no-repeat;background-image:{{ avatarBg }}">{{ avatarPlaceholderText }}</div>
+          <div style="font-size:12.5px;color:#FF8A63">{{ avatarLabel }}</div>
+          <input type="file" accept="image/*" onChange="{{ onAvatarFile }}" style="display:none" />
+        </label>
+        <input value="{{ nameValue }}" onChange="{{ onNameChange }}" placeholder="Tu nombre" style="height:50px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.14);padding:0 16px;font-size:15px;color:#F2EFEA;outline:none" />
+        <input value="{{ inviteValue }}" onChange="{{ onInviteChange }}" placeholder="Código de invitación (opcional)" style="height:50px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.14);padding:0 16px;font-size:15px;color:#F2EFEA;outline:none" />
+        <div onClick="{{ createProfile }}" style="height:50px;border-radius:12px;background:#FF5A2D;color:#08080A;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer">Empezar</div>
+        <div style="font-size:13px;color:#FF8A63;text-align:center;min-height:16px">{{ authMessage }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPlatforms }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px">
+      <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:20px">
+        <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Instrument Serif',serif;font-size:28px">¿Qué plataformas tienes?</div>
+          <div style="font-size:14px;color:#8C8A93">Así no te recomendamos algo que no puedes ver.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)">
+          <sc-for list="{{ platformToggles }}" as="p" hint-placeholder-count="5">
+            <div onClick="{{ p.toggle }}" style="min-height:54px;display:flex;align-items:center;gap:12px;padding:0 16px;background:#141418;cursor:pointer">
+              <div style="width:26px;height:26px;border-radius:6px;background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#1c1c22;background-image:{{ p.logoBg }}"></div>
+              <div style="flex:1;font-size:14.5px">{{ p.name }}</div>
+              <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid {{ p.borderColor }};background:{{ p.checkBg }};display:flex;align-items:center;justify-content:center;font-size:13px;color:#08080A">{{ p.check }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ savePlatforms }}" style="height:50px;border-radius:12px;background:#FF5A2D;color:#08080A;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer">Continuar</div>
+        <div onClick="{{ skipPlatforms }}" style="text-align:center;font-size:13.5px;color:#8C8A93;cursor:pointer">Saltar por ahora</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSeed }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:100vh;padding:24px;align-items:center">
+      <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px">
+        <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Instrument Serif',serif;font-size:28px">¿Ya has visto algo de esto?</div>
+          <div style="font-size:14px;color:#8C8A93">Márcalo para que tus primeras recomendaciones sean buenas.</div>
+        </div>
+        <input value="{{ seedQuery }}" onChange="{{ onSeedQueryChange }}" placeholder="Buscar título…" style="height:48px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.14);padding:0 16px;font-size:14.5px;color:#F2EFEA;outline:none" />
+        <div style="display:flex;flex-direction:column;gap:9px;max-height:44vh;overflow:auto">
+          <sc-for list="{{ seedResults }}" as="t" hint-placeholder-count="4">
+            <div onClick="{{ t.toggle }}" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:#141418;border:1px solid {{ t.borderColor }};cursor:pointer">
+              <div style="width:38px;height:56px;border-radius:5px;background-size:cover;background-position:center;background-image:{{ t.posterBg }};flex-shrink:0"></div>
+              <div style="flex:1;font-size:13.5px">{{ t.title }}</div>
+              <div style="font-size:12px;font-weight:600;color:{{ t.checkColor }}">{{ t.checkLabel }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ finishSeed }}" style="height:50px;border-radius:12px;background:#FF5A2D;color:#08080A;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:8px">Continuar</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAppScreen }}" hint-placeholder-val="{{ false }}">
+    <div style="height:100vh;display:flex;flex-direction:row;overflow:hidden">
+
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ false }}">
+        <div style="width:220px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);padding:26px 18px;display:flex;flex-direction:column;gap:26px;background:#0C0C10">
+          <div style="font-family:'Instrument Serif',serif;font-size:26px">Nextplay</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div onClick="{{ goHome }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.home }};color:{{ navColor.home }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v9a1 1 0 0 0 1 1h4v-6h3v6h4a1 1 0 0 0 1-1v-9" stroke-linecap="round" stroke-linejoin="round"/></svg>Inicio</div>
+            <div onClick="{{ goExplore }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.explore }};color:{{ navColor.explore }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z" stroke-linejoin="round"/></svg>Explorar</div>
+            <div onClick="{{ goCollections }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.collections }};color:{{ navColor.collections }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="13" height="16" rx="1.5"/><rect x="16" y="7" width="5" height="10" rx="1.2"/></svg>Colecciones</div>
+            <div onClick="{{ goList }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.list }};color:{{ navColor.list }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1z" stroke-linejoin="round"/></svg>Mi lista</div>
+            <div onClick="{{ goHistory }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.history }};color:{{ navColor.history }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round" stroke-linejoin="round"/></svg>Historial</div>
+            <div onClick="{{ goRatings }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.ratings }};color:{{ navColor.ratings }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8z" stroke-linejoin="round"/></svg>Valoraciones</div>
+            <div onClick="{{ goMembers }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.members }};color:{{ navColor.members }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c2.6.3 4.5 2.4 4.5 5.2" stroke-linecap="round"/></svg>Miembros</div>
+            <div onClick="{{ goNotifications }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.notifications }};color:{{ navColor.notifications }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14.5 6 10.5z" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke-linecap="round"/></svg>Notificaciones</div>
+            <div onClick="{{ goSettings }}" style="min-height:40px;display:flex;align-items:center;gap:11px;padding:0 12px;border-radius:9px;cursor:pointer;background:{{ navBg.settings }};color:{{ navColor.settings }};font-size:14px;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18 6l-1.5 1.5M7.5 16.5 6 18M18 18l-1.5-1.5M7.5 7.5 6 6" stroke-linecap="round"/></svg>Ajustes</div>
+          </div>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:10px">
+            <div onClick="{{ goProfileHub }}" style="width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;background-repeat:no-repeat;background-image:{{ currentProfile.avatarBg }};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#08080A">{{ currentProfile.initial }}</div>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+              <div style="font-size:13px;color:#F2EFEA;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ currentProfile.name }} <span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(255,90,45,0.16);color:#FF8A63">{{ currentProfile.roleLabel }}</span></div>
+              <div onClick="{{ signOut }}" style="font-size:13px;color:#8C8A93;cursor:pointer">Cerrar sesión</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:22px 20px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-family:'Instrument Serif',serif;font-size:26px">Nextplay</div>
+            <div onClick="{{ goProfileHub }}" style="width:32px;height:32px;border-radius:50%;background-size:cover;background-position:center;background-repeat:no-repeat;background-image:{{ currentProfile.avatarBg }};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#08080A">{{ currentProfile.initial }}</div>
+          </div>
+        </sc-if>
+
+<sc-if value="{{ isCatalogLoading }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding-top:80px;color:#8C8A93;font-size:14px">Cargando catálogo…</div>
+        </sc-if>
+        <sc-if value="{{ isCatalogReady }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;padding:{{ contentPadding }}">
+          <div style="max-width:900px;margin:0 auto;width:100%">
+
+            <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#FF5A2D">Recomendación de hoy</div>
+              <div style="border-radius:18px;overflow:hidden;background:#141418">
+                <div onClick="{{ hero.open }}" style="height:{{ heroHeight }};position:relative;cursor:pointer;background-color:#0C0C10;background-size:cover;background-repeat:no-repeat;background-position:center;background-image:{{ hero.posterBg }}">
+                  <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:20px;background:linear-gradient(180deg,transparent 30%,rgba(8,8,10,0.75) 100%)">
+                    <div style="font-family:'Instrument Serif',serif;font-size:34px;line-height:1">{{ hero.title }}</div>
+                  </div>
+                </div>
+                <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px">
+                  <div onClick="{{ hero.open }}" style="cursor:pointer;display:flex;flex-direction:column;gap:8px">
+                    <div style="font-size:13px;color:#C8C5CE">{{ hero.genres }} · {{ hero.platform }}</div>
+                    <div style="font-size:13.5px;font-weight:700;color:#FF5A2D">{{ hero.score }}% de afinidad</div>
+                    <div style="font-size:13px;color:#8C8A93;line-height:1.4">{{ hero.reason }}</div>
+                  </div>
+                  <div style="display:flex;gap:10px;padding-top:4px">
+                    <div onClick="{{ hero.share }}" style="height:38px;padding:0 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">Compartir</div>
+                    <div onClick="{{ hero.dismiss }}" style="height:38px;padding:0 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:#8C8A93">No me interesa</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding:24px 0 10px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#8C8A93">¿Qué te apetece?</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ moodChips }}" as="mo" hint-placeholder-count="4">
+                  <div onClick="{{ mo.select }}" style="padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;background:{{ mo.bg }};color:{{ mo.color }}">{{ mo.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="padding:26px 0 12px;font-size:17px;font-weight:600">Para ti</div>
+              <div style="display:{{ recGridDisplay }};grid-template-columns:{{ recGridCols }};gap:12px">
+                <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
+                  <div onClick="{{ t.open }}" style="display:flex;gap:12px;padding:12px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                    <div style="width:46px;height:66px;border-radius:6px;background-size:cover;background-position:center;background-image:{{ t.posterBg }};flex-shrink:0"></div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14.5px;font-weight:600">{{ t.title }}</div>
+                      <div style="font-size:12.5px;color:#8C8A93;padding-top:3px">{{ t.genres }} · {{ t.platform }}</div>
+                    </div>
+                    <div style="font-size:13px;font-weight:700;color:#FF5A2D;align-self:center;white-space:nowrap">{{ t.score }}%</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ hasHousehold }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:26px 0 12px;font-size:17px;font-weight:600">Qué ver con {{ partnerName }}</div>
+                <div onClick="{{ together.open }}" style="display:flex;gap:12px;padding:12px;border-radius:12px;background:#141418;border:1px solid rgba(255,90,45,0.25);cursor:pointer">
+                  <div style="width:46px;height:66px;border-radius:6px;background-size:cover;background-position:center;background-image:{{ together.posterBg }};flex-shrink:0"></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14.5px;font-weight:600">{{ together.title }}</div>
+                    <div style="font-size:12.5px;color:#8C8A93;padding-top:3px">{{ together.genres }} · {{ together.platform }}</div>
+                  </div>
+                  <div style="font-size:13px;font-weight:700;color:#FF5A2D;align-self:center;white-space:nowrap">{{ together.score }}%</div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isExplore }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;gap:12px;flex-wrap:wrap">
+                <div style="font-family:'Instrument Serif',serif;font-size:28px">Explorar</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <div onClick="{{ goCollections }}" style="height:40px;padding:0 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.16);font-size:13.5px;font-weight:600;display:flex;align-items:center;cursor:pointer">Colecciones</div>
+                  <div onClick="{{ goIndecisive }}" style="height:40px;padding:0 18px;border-radius:10px;background:rgba(255,90,45,0.16);color:#FF8A63;font-size:13.5px;font-weight:600;display:flex;align-items:center;cursor:pointer">¿No sabes qué ver? Modo indeciso</div>
+                </div>
+              </div>
+              <div style="font-size:12.5px;color:#6E6C76;padding-bottom:14px">{{ catalogTotal }} títulos en el catálogo ({{ catalogMovies }} pelis · {{ catalogSeries }} series)</div>
+              <input value="{{ searchQuery }}" onChange="{{ onSearchChange }}" placeholder="Buscar título…" style="height:46px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.14);padding:0 16px;font-size:14.5px;color:#F2EFEA;outline:none;margin-bottom:14px;width:100%;box-sizing:border-box" />
+              <div style="font-size:11.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6E6C76;padding-bottom:8px">Plataforma</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:14px">
+                <sc-for list="{{ platformTabs }}" as="p" hint-placeholder-count="4">
+                  <div onClick="{{ p.select }}" style="padding:8px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;background:{{ p.bg }};color:{{ p.color }};display:flex;align-items:center;gap:7px">
+                    <sc-if value="{{ p.hasLogo }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:16px;height:16px;background-size:contain;background-repeat:no-repeat;background-position:center;background-image:{{ p.logoBg }}"></div>
+                    </sc-if>
+                    {{ p.name }}
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size:11.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6E6C76;padding-bottom:8px">Género</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px">
+                <sc-for list="{{ genreTabs }}" as="g" hint-placeholder-count="4">
+                  <div onClick="{{ g.select }}" style="padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;background:{{ g.bg }};color:{{ g.color }}">{{ g.name }}</div>
+                </sc-for>
+              </div>
+              <div style="font-size:12.5px;color:#8C8A93;padding-bottom:14px">{{ exploreCount }} resultados</div>
+              <sc-if value="{{ hasExploreItems }}" hint-placeholder-val="{{ true }}">
+                <div style="display:{{ recGridDisplay }};grid-template-columns:{{ recGridCols }};gap:12px">
+                  <sc-for list="{{ exploreItems }}" as="t" hint-placeholder-count="4">
+                    <div onClick="{{ t.open }}" style="display:flex;gap:12px;padding:12px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                      <div style="width:46px;height:66px;border-radius:6px;background-size:cover;background-position:center;background-image:{{ t.posterBg }};flex-shrink:0"></div>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:14.5px;font-weight:600">{{ t.title }}</div>
+                        <div style="font-size:12.5px;color:#8C8A93;padding-top:3px">{{ t.genres }} · {{ t.platform }}</div>
+                      </div>
+                      <div style="font-size:13px;font-weight:700;color:#FF5A2D;align-self:center;white-space:nowrap">{{ t.score }}%</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasExploreItems }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding-top:50px;color:#8C8A93;font-size:14px;line-height:1.5">Sin resultados con estos filtros.<br/>Prueba a quitar alguno.</div>
+              </sc-if>
+              <sc-if value="{{ hasMoreExplore }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ loadMoreExplore }}" style="height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:13.5px;cursor:pointer;margin-top:16px">Cargar más</div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isCollections }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goExplore }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Explorar</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:6px">Colecciones</div>
+              <div style="font-size:13px;color:#8C8A93;padding-bottom:20px">Franquicias con más de un título en el catálogo</div>
+              <sc-if value="{{ hasCollections }}" hint-placeholder-val="{{ true }}">
+                <div style="display:{{ recGridDisplay }};grid-template-columns:{{ recGridCols }};gap:12px">
+                  <sc-for list="{{ collections }}" as="c" hint-placeholder-count="3">
+                    <div onClick="{{ c.open }}" style="padding:16px;border-radius:14px;background:#141418;border:1px solid rgba(255,255,255,0.06);cursor:pointer;display:flex;align-items:center;gap:14px">
+                      <div style="width:44px;height:44px;border-radius:50%;background:{{ c.badgeGrad }};display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:18px;color:#F2EFEA;flex-shrink:0">{{ c.initial }}</div>
+                      <div>
+                        <div style="font-size:15px;font-weight:600">{{ c.name }}</div>
+                        <div style="font-size:12.5px;color:#8C8A93;padding-top:4px">{{ c.count }} en el catálogo</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasCollections }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding-top:50px;color:#8C8A93;font-size:14px">Aún no hay franquicias con varios títulos en tu catálogo.</div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ backFromDetail }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Volver</div>
+              <div style="border-radius:18px;overflow:hidden;height:{{ detailHeroHeight }};position:relative;background-size:cover;background-repeat:no-repeat;background-position:center;background-image:{{ selected.posterBg }}">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;background:linear-gradient(180deg,transparent 30%,rgba(8,8,10,0.9) 100%)">
+                  <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1">{{ selected.title }}</div>
+                  <div style="font-size:13px;color:#A9A6AF;padding-top:8px">{{ selected.type }} · {{ selected.duration }} · {{ selected.platform }}</div>
+                </div>
+              </div>
+              <div style="padding:20px 0;display:flex;flex-direction:column;gap:18px;max-width:520px">
+                <sc-if value="{{ selected.showScore }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:14px 16px;border-radius:12px;background:rgba(255,90,45,0.1);border:1px solid rgba(255,90,45,0.3);display:flex;flex-direction:column;gap:6px">
+                    <div style="font-size:13.5px;font-weight:700;color:#FF5A2D">{{ selected.score }}% de afinidad</div>
+                    <div style="font-size:13px;color:#C8C5CE;line-height:1.4">{{ selected.reason }}</div>
+                  </div>
+                </sc-if>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <div onClick="{{ selected.toggleWatched }}" style="height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:{{ selected.watchedColor }};padding:0 22px">{{ selected.watchedLabel }}</div>
+                  <div onClick="{{ selected.toggleList }}" style="height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:{{ selected.listColor }};padding:0 22px">{{ selected.listLabel }}</div>
+                  <div onClick="{{ selected.share }}" style="height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;padding:0 22px">Compartir</div>
+                  <div onClick="{{ selected.dismiss }}" style="height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:#8C8A93;padding:0 22px">No me interesa</div>
+                </div>
+                <sc-if value="{{ selected.isWatched }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ selected.rewatch }}" style="font-size:13px;color:#8C8A93;cursor:pointer;text-decoration:underline;width:fit-content">La he vuelto a ver</div>
+                </sc-if>
+                <div>
+                  <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#8C8A93;padding-bottom:10px">Tu valoración</div>
+                  <div style="display:flex;gap:6px">
+                    <sc-for list="{{ selected.stars }}" as="s" hint-placeholder-count="5">
+                      <div onClick="{{ s.onClick }}" style="font-size:32px;color:{{ s.color }};cursor:pointer">★</div>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:12.5px;color:#8C8A93;padding-top:8px">{{ selected.ratingHint }}</div>
+                </div>
+                <div style="font-size:15px;line-height:1.6;color:#C8C5CE">{{ selected.blurb }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Mi lista</div>
+              <sc-if value="{{ hasList }}" hint-placeholder-val="{{ true }}">
+                <div style="display:{{ recGridDisplay }};grid-template-columns:{{ recGridCols }};gap:12px">
+                  <sc-for list="{{ listItems }}" as="t" hint-placeholder-count="2">
+                    <div onClick="{{ t.open }}" style="display:flex;gap:12px;padding:12px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                      <div style="width:46px;height:66px;border-radius:6px;background-size:cover;background-position:center;background-image:{{ t.posterBg }};flex-shrink:0"></div>
+                      <div style="flex:1"><div style="font-size:14.5px;font-weight:600">{{ t.title }}</div><div style="font-size:12.5px;color:#8C8A93;padding-top:3px">{{ t.genres }} · {{ t.platform }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasListEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding-top:60px">
+                  <div style="width:56px;height:56px;border-radius:16px;border:1.5px dashed rgba(255,255,255,0.22)"></div>
+                  <div style="font-size:16px;font-weight:600">Tu lista está vacía</div>
+                  <div style="font-size:13.5px;color:#8C8A93;max-width:220px">Guarda algo desde su ficha con el botón +.</div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isRatings }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goProfileHub }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Perfil</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Mis valoraciones</div>
+              <sc-if value="{{ hasRatings }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:1px">
+                  <sc-for list="{{ ratedItems }}" as="t" hint-placeholder-count="2">
+                    <div onClick="{{ t.open }}" style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                      <div style="width:42px;height:60px;border-radius:5px;background-size:cover;background-position:center;background-image:{{ t.posterBg }};flex-shrink:0"></div>
+                      <div style="flex:1"><div style="font-size:14.5px;font-weight:600">{{ t.title }}</div><div style="font-size:12.5px;color:#8C8A93;padding-top:2px">{{ t.genres }}</div></div>
+                      <div style="font-size:15px;color:#FF5A2D">{{ t.starsText }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasRatingsEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding-top:60px">
+                  <div style="font-size:30px;letter-spacing:4px;color:#2A2A32">★★★★★</div>
+                  <div style="font-size:16px;font-weight:600">Aún no has valorado nada</div>
+                  <div style="font-size:13.5px;color:#8C8A93;max-width:230px">Puntúa lo que veas para mejorar tus recomendaciones.</div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isProfileHub }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Perfil</div>
+              <div style="padding:16px;border-radius:14px;background:#141418;border:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;gap:14px;margin-bottom:20px;max-width:420px">
+                <div style="display:flex;align-items:center;gap:16px">
+                  <label style="cursor:pointer">
+                    <div style="width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;background-repeat:no-repeat;background-image:{{ avatarBg }};border:1.5px dashed rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:11px;color:#F2EFEA">{{ avatarPlaceholderText }}</div>
+                    <input type="file" accept="image/*" onChange="{{ onAvatarFile }}" style="display:none" />
+                  </label>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                    <input value="{{ editNameValue }}" onChange="{{ onEditNameChange }}" style="height:42px;border-radius:10px;background:#1C1C22;border:1px solid rgba(255,255,255,0.14);padding:0 12px;font-size:14px;color:#F2EFEA;outline:none" />
+                    <div onClick="{{ saveProfileEdits }}" style="height:36px;border-radius:9px;background:#FF5A2D;color:#08080A;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;width:fit-content;padding:0 16px">Guardar</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);max-width:420px">
+                <div onClick="{{ goHistory }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Historial de visionado<span style="color:#6E6C76">›</span></div>
+                <div onClick="{{ goRatings }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Mis valoraciones<span style="color:#6E6C76">›</span></div>
+                <div onClick="{{ goMembers }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Miembros y permisos<span style="color:#6E6C76">›</span></div>
+                <div onClick="{{ goNotifications }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Notificaciones<span style="color:#6E6C76">›</span></div>
+                <div onClick="{{ goSettings }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Ajustes<span style="color:#6E6C76">›</span></div>
+              </div>
+              <div onClick="{{ signOut }}" style="margin-top:20px;font-size:14px;color:#FF8A63;cursor:pointer">Cerrar sesión</div>
+            </sc-if>
+
+            <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goProfileHub }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Perfil</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:6px">Historial</div>
+              <div style="font-size:13px;color:#8C8A93;padding-bottom:16px">{{ historyMoviesCount }} pelis · {{ historySeriesCount }} series vistas</div>
+              <div style="display:flex;gap:8px;padding-bottom:18px">
+                <sc-for list="{{ historyTabs }}" as="ht" hint-placeholder-count="3">
+                  <div onClick="{{ ht.select }}" style="padding:8px 14px;border-radius:999px;cursor:pointer;font-size:12.5px;font-weight:600;background:{{ ht.bg }};color:{{ ht.color }}">{{ ht.label }}</div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:1px">
+                  <sc-for list="{{ historyItems }}" as="h" hint-placeholder-count="3">
+                    <div onClick="{{ h.open }}" style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                      <div style="width:42px;height:60px;border-radius:5px;background-size:cover;background-position:center;background-image:{{ h.posterBg }};flex-shrink:0"></div>
+                      <div style="flex:1"><div style="font-size:14.5px;font-weight:600">{{ h.title }}</div><div style="font-size:12px;color:#8C8A93;padding-top:2px">{{ h.type }} · {{ h.lastLabel }}</div></div>
+                      <div style="font-size:12.5px;color:#8C8A93;white-space:nowrap">{{ h.timesLabel }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasHistoryEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding-top:50px;color:#8C8A93;font-size:14px">Aún no has marcado nada como visto.</div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isMembers }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goProfileHub }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Perfil</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Miembros</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ members }}" as="m" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:12px;padding:13px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06)">
+                    <div style="width:38px;height:38px;border-radius:50%;background-size:cover;background-position:center;background-repeat:no-repeat;background-image:{{ m.avatarBg }};flex-shrink:0"></div>
+                    <div style="flex:1;font-size:14.5px;font-weight:600">{{ m.name }}</div>
+                    <div style="font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;background:{{ m.badgeBg }};color:{{ m.badgeColor }}">{{ m.roleLabel }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+                <div style="padding-top:24px;display:flex;flex-direction:column;gap:12px;max-width:420px">
+                  <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#8C8A93">Invitar a alguien</div>
+                  <div onClick="{{ createInvite }}" style="height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;width:fit-content;padding:0 20px">Generar código de invitación</div>
+                  <sc-if value="{{ hasInviteCode }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:14px 16px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;gap:6px">
+                      <div style="font-size:12px;color:#8C8A93">Comparte este código, se usa una vez</div>
+                      <div style="font-family:'Instrument Serif',serif;font-size:26px;letter-spacing:3px">{{ inviteCode }}</div>
+                    </div>
+                  </sc-if>
+                  <div style="font-size:12.5px;color:#8C8A93;line-height:1.5">Quien se una con este código entra como miembro: su propio perfil y valoraciones, sin poder invitar a más gente ni gestionar la cuenta.</div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isNotifications }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goProfileHub }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Perfil</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Notificaciones</div>
+              <sc-if value="{{ hasNotifications }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="3">
+                    <div onClick="{{ n.open }}" style="display:flex;gap:12px;padding:13px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06);cursor:pointer">
+                      <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,90,45,0.16);flex-shrink:0"></div>
+                      <div style="font-size:13.5px;line-height:1.4">{{ n.text }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasNotifications }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding-top:50px;font-size:14px;color:#8C8A93">Sin novedades por ahora.</div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goProfileHub }}" style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#8C8A93;cursor:pointer;padding-bottom:16px">← Perfil</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:28px;padding-bottom:20px">Ajustes</div>
+              <div style="display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);max-width:420px;margin-bottom:22px">
+                <div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px">Correo<span style="color:#8C8A93;font-size:13px">{{ userEmail }}</span></div>
+                <div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px">Idioma<span style="color:#8C8A93;font-size:13px">Español</span></div>
+                <div onClick="{{ goPlatforms }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Plataformas conectadas<span style="color:#6E6C76">›</span></div>
+                <div onClick="{{ toggleNotifPref }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Notificaciones<div style="width:40px;height:24px;border-radius:999px;background:{{ notifToggleBg }};position:relative"><div style="position:absolute;top:2px;{{ notifTogglePos }}:2px;width:20px;height:20px;border-radius:50%;background:#08080A"></div></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);max-width:420px;margin-bottom:22px">
+                <div onClick="{{ toggleFamilyMode }}" style="min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#141418;font-size:14.5px;cursor:pointer">Modo familia (oculta +18)<div style="width:40px;height:24px;border-radius:999px;background:{{ familyToggleBg }};position:relative"><div style="position:absolute;top:2px;{{ familyTogglePos }}:2px;width:20px;height:20px;border-radius:50%;background:#08080A"></div></div></div>
+              </div>
+
+              <sc-if value="{{ hasPlatformInsights }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#8C8A93;padding-bottom:10px">Uso de tus plataformas</div>
+                <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:22px;max-width:420px">
+                  <sc-for list="{{ platformInsights }}" as="pi" hint-placeholder-count="2">
+                    <div style="padding:12px 14px;border-radius:12px;background:#141418;border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+                      <div style="font-size:14px">{{ pi.name }}</div>
+                      <div style="font-size:12.5px;color:{{ pi.color }}">{{ pi.text }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ refreshCatalog }}" style="height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:13.5px;cursor:pointer;width:fit-content;padding:0 18px">Actualizar catálogo desde TMDB</div>
+              </sc-if>
+            </sc-if>
+
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+          <dc-import name="BottomNav" active="{{ navActive }}" go-home="{{ goHome }}" go-list="{{ goList }}" go-explore="{{ goExplore }}" go-profile="{{ goProfileHub }}" hint-size="100%,80px"></dc-import>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isIndecisive }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:100vh;align-items:center;padding:0 20px">
+      <div onClick="{{ goExplore }}" style="align-self:flex-start;padding:22px 0 0;font-size:13.5px;color:#8C8A93;cursor:pointer">← Volver</div>
+      <div style="text-align:center;padding:16px 0 8px">
+        <div style="font-family:'Instrument Serif',serif;font-size:26px">¿Esta o la siguiente?</div>
+        <div style="font-size:13px;color:#8C8A93;padding-top:4px">Pasa hasta que algo te convenza</div>
+      </div>
+      <sc-if value="{{ hasSwipeCard }}" hint-placeholder-val="{{ true }}">
+        <div style="width:100%;max-width:360px;border-radius:20px;overflow:hidden;background-size:cover;background-repeat:no-repeat;background-position:center;background-image:{{ swipeCard.posterBg }};box-shadow:0 20px 40px rgba(0,0,0,0.4);margin-top:10px">
+          <div style="height:280px;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;background:linear-gradient(180deg,transparent 40%,rgba(8,8,10,0.92) 100%)">
+            <div style="font-family:'Instrument Serif',serif;font-size:30px">{{ swipeCard.title }}</div>
+            <div style="font-size:13px;color:#C8C5CE;padding-top:6px">{{ swipeCard.genres }} · {{ swipeCard.platform }}</div>
+            <div style="font-size:13px;line-height:1.5;color:#C8C5CE;padding-top:10px">{{ swipeCard.blurb }}</div>
+            <div style="font-size:13px;font-weight:700;color:#FF5A2D;padding-top:8px">{{ swipeCard.score }}% de afinidad</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:26px;padding:24px 0 40px">
+          <div onClick="{{ swipeCard.pass }}" style="width:58px;height:58px;border-radius:50%;background:#22222A;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;color:#8C8A93;cursor:pointer">✕</div>
+          <div onClick="{{ swipeCard.open }}" style="width:70px;height:70px;border-radius:50%;background:#FF5A2D;display:flex;align-items:center;justify-content:center;font-size:26px;color:#08080A;cursor:pointer">♥</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasSwipeCard }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding-top:60px;color:#8C8A93;font-size:14px">Has visto todo el catálogo por ahora.</div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const SUPABASE_URL = 'https://onngeftjvqfdqhbkeblw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ubmdlZnRqdnFmZHFoYmtlYmx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MzQ5ODgsImV4cCI6MjEwNTAxMDk4OH0.r6mHRBLblzGlTkE_cczrQL4JH7fx086etBnJmfuyD6g';
+
+const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwNWViNTBjNzFlMWVkOGM1MWYzMjM4YzZhNzE4YmY1NSIsIm5iZiI6MTc4OTQ3MzA5MS45MzkwMDAxLCJzdWIiOiI2YWE5MzE0M2I0NmVjMzZlNTQ2MGI3ZDEiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.-UTTuTcpddRuXL_CzQoQXa-kREu1QMkP7HOfboK9oQ8';
+const PLATFORMS = ['Netflix', 'HBO Max', 'Prime Video', 'Disney+', 'Apple TV+', 'Filmin', 'SkyShowtime', 'Movistar Plus+'];
+const PLATFORM_LOGOS = {
+  'Netflix': './icons/logo-netflix.png',
+  'HBO Max': './icons/logo-hbomax.png',
+  'Prime Video': './icons/logo-primevideo.png',
+  'Disney+': './icons/logo-disneyplus.png',
+  'Apple TV+': './icons/logo-appletv.png',
+  'Filmin': './icons/logo-filmin.png',
+  'SkyShowtime': './icons/logo-skyshowtime.png',
+  'Movistar Plus+': './icons/logo-movistarplus.png'
+};
+const PLATFORM_ALIASES = {
+  'Netflix': 'Netflix',
+  'Amazon Prime Video': 'Prime Video', 'Prime Video': 'Prime Video',
+  'HBO Max': 'HBO Max', 'Max': 'HBO Max',
+  'Disney Plus': 'Disney+', 'Disney+': 'Disney+',
+  'Apple TV Plus': 'Apple TV+', 'Apple TV+': 'Apple TV+',
+  'Filmin': 'Filmin',
+  'SkyShowtime': 'SkyShowtime',
+  'Movistar Plus+': 'Movistar Plus+', 'Movistar Plus': 'Movistar Plus+'
+};
+const STOPWORDS = new Set(['de','la','el','en','y','a','los','las','un','una','que','del','al','su','sus','por','con','para','se','es','lo','como','más','pero','le','ya','o','fue','este','esta','entre','cuando','todo','esa','ese','sin','sobre','tras','les','muy','hay','ser','han','esos','esas','otro','otra','donde','desde','sido','solo','tiene','tras']);
+const FALLBACK_GRADS = ['linear-gradient(150deg,#1D3A44,#0E1418)', 'linear-gradient(150deg,#402A14,#15100C)', 'linear-gradient(150deg,#2C2340,#0D0B12)', 'linear-gradient(150deg,#33291A,#13100A)', 'linear-gradient(150deg,#3B1420,#0F0A10)', 'linear-gradient(150deg,#1C2B33,#0A1013)'];
+
+class Component extends DCLogic {
+  state = {
+    screen: 'loading', session: null, profile: null, ratings: {}, list: [], selectedId: null,
+    emailValue: '', nameValue: '', authMessage: '', isDesktop: false, isCodeStep: false, codeValue: '', resendIn: 0,
+    inviteValue: '', members: [], inviteCode: '', isDemo: false, avatarUrl: '', avatarLabel: 'Subir foto',
+    editNameValue: '', explorePlatform: 'Todo', platformSelection: [], notifPrefOn: true, householdRatings: null,
+    dismissed: [], moodFilter: null, swipeIndex: 0, searchQuery: '', exploreGenre: 'Todo', exploreVisibleCount: 24,
+    seedQuery: '', seededIds: [], collectionFilter: null, watched: {}, historyTab: 'all',
+    catalog: [], catalogLoading: true
+  };
+
+  async tmdbFetch(path) {
+    const res = await fetch('https://api.themoviedb.org/3' + path, { headers: { Authorization: 'Bearer ' + TMDB_TOKEN, accept: 'application/json' } });
+    return res.json();
+  }
+
+  async fetchExtra(item) {
+    try {
+      const data = await this.tmdbFetch('/' + item.mediaType + '/' + item.tmdbId + '?language=es-ES&append_to_response=watch/providers');
+      const wp = data['watch/providers'] && data['watch/providers'].results && data['watch/providers'].results.ES;
+      const flatrate = (wp && wp.flatrate) || [];
+      const rentBuy = (wp && (wp.rent || wp.buy)) || [];
+      const duration = item.mediaType === 'movie'
+        ? (data.runtime ? data.runtime + ' min' : '—')
+        : (data.episode_run_time && data.episode_run_time[0] ? data.episode_run_time[0] + ' min' : '—');
+      const normalized = Array.from(new Set(flatrate.map(p => PLATFORM_ALIASES[p.provider_name]).filter(Boolean)));
+      let platform, platforms;
+      if (normalized.length) { platform = normalized[0]; platforms = normalized; }
+      else if (rentBuy.length) { platform = 'Alquiler/compra en ' + rentBuy[0].provider_name; platforms = []; }
+      else { platform = 'No disponible en streaming'; platforms = []; }
+      const collectionName = data.belongs_to_collection ? data.belongs_to_collection.name : null;
+      const collectionId = data.belongs_to_collection ? data.belongs_to_collection.id : null;
+      const backdrop = data.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + data.backdrop_path : null;
+      return { platform, platforms, duration, adult: !!data.adult, collectionName, collectionId, backdrop };
+    } catch (e) { return { platform: 'No disponible en streaming', platforms: [], duration: '—', adult: false, collectionName: null, collectionId: null }; }
+  }
+
+  mapCatalogRow(row) {
+    return { id: row.id, tmdbId: row.tmdb_id, mediaType: row.media_type, title: row.title, genres: row.genres || [], poster: row.poster, backdrop: row.backdrop, blurb: row.blurb, type: row.type, duration: row.duration, platform: row.platform, platforms: row.platforms || [], adult: !!row.adult, collectionName: row.collection_name, grad: FALLBACK_GRADS[Math.abs(row.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % FALLBACK_GRADS.length] };
+  }
+
+  async fetchIconicItem(mediaType, tmdbId) {
+    try {
+      const data = await this.tmdbFetch('/' + mediaType + '/' + tmdbId + '?language=es-ES&append_to_response=watch/providers');
+      if (!data || !data.poster_path) return null;
+      const wp = data['watch/providers'] && data['watch/providers'].results && data['watch/providers'].results.ES;
+      const flatrate = (wp && wp.flatrate) || [];
+      const rentBuy = (wp && (wp.rent || wp.buy)) || [];
+      const normalized = Array.from(new Set(flatrate.map(p => PLATFORM_ALIASES[p.provider_name]).filter(Boolean)));
+      let platform, platforms;
+      if (normalized.length) { platform = normalized[0]; platforms = normalized; }
+      else if (rentBuy.length) { platform = 'Alquiler/compra en ' + rentBuy[0].provider_name; platforms = []; }
+      else { platform = 'No disponible en streaming'; platforms = []; }
+      const duration = mediaType === 'movie' ? (data.runtime ? data.runtime + ' min' : '—') : (data.episode_run_time && data.episode_run_time[0] ? data.episode_run_time[0] + ' min' : '—');
+      return {
+        id: mediaType + '-' + tmdbId, tmdbId, mediaType, title: data.title || data.name,
+        genres: (data.genres || []).map(g => g.name), poster: 'https://image.tmdb.org/t/p/w500' + data.poster_path,
+        backdrop: data.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + data.backdrop_path : null,
+        blurb: data.overview || 'Sin sinopsis disponible.', type: mediaType === 'movie' ? 'Película' : 'Serie',
+        grad: FALLBACK_GRADS[tmdbId % FALLBACK_GRADS.length], platform, platforms, duration,
+        adult: !!data.adult, collectionName: data.belongs_to_collection ? data.belongs_to_collection.name : null,
+        collectionId: data.belongs_to_collection ? data.belongs_to_collection.id : null
+      };
+    } catch (e) { return null; }
+  }
+
+  async loadCatalog() {
+    if (!this.state.isDemo && this.sb) {
+      try {
+        const { data: rows } = await this.sb.from('nextplay_catalog').select('*');
+        if (rows && rows.length > 0) { this.setState({ catalog: rows.map(r => this.mapCatalogRow(r)), catalogLoading: false }); return; }
+      } catch (e) {}
+    }
+    await this.fetchAndStoreCatalogFromTMDB();
+  }
+
+  async fetchAndStoreCatalogFromTMDB() {
+    try {
+      const [movieGenres, tvGenres] = await Promise.all([
+        this.tmdbFetch('/genre/movie/list?language=es-ES'),
+        this.tmdbFetch('/genre/tv/list?language=es-ES')
+      ]);
+      const genreMap = {};
+      (movieGenres.genres || []).forEach(g => { genreMap[g.id] = g.name; });
+      (tvGenres.genres || []).forEach(g => { genreMap[g.id] = g.name; });
+
+      const sources = [
+        { ep: '/trending/all/week', pages: [1, 2, 3, 4, 5, 6] },
+        { ep: '/movie/popular', pages: [1, 2, 3, 4, 5, 6, 7, 8], forceType: 'movie' },
+        { ep: '/tv/popular', pages: [1, 2, 3, 4, 5, 6, 7, 8], forceType: 'tv' },
+        { ep: '/movie/top_rated', pages: [1, 2, 3, 4, 5], forceType: 'movie' },
+        { ep: '/tv/top_rated', pages: [1, 2, 3, 4, 5], forceType: 'tv' }
+      ];
+      const requests = [];
+      sources.forEach(s => s.pages.forEach(p => requests.push(
+        this.tmdbFetch(s.ep + '?language=es-ES&page=' + p).then(res => (res.results || []).map(r => ({ ...r, media_type: s.forceType || r.media_type })))
+      )));
+      const PROVIDER_IDS = [{ id: 8, name: 'Netflix' }, { id: 119, name: 'Prime Video' }, { id: 337, name: 'Disney+' }, { id: 350, name: 'Apple TV+' }, { id: 1899, name: 'HBO Max' }];
+      PROVIDER_IDS.forEach(prov => {
+        [1, 2].forEach(p => {
+          requests.push(this.tmdbFetch('/discover/movie?language=es-ES&sort_by=popularity.desc&watch_region=ES&with_watch_providers=' + prov.id + '&with_watch_monetization_types=flatrate&page=' + p).then(res => (res.results || []).map(r => ({ ...r, media_type: 'movie' }))));
+          requests.push(this.tmdbFetch('/discover/tv?language=es-ES&sort_by=popularity.desc&watch_region=ES&with_watch_providers=' + prov.id + '&with_watch_monetization_types=flatrate&page=' + p).then(res => (res.results || []).map(r => ({ ...r, media_type: 'tv' }))));
+        });
+      });
+      const rawLists = await Promise.all(requests);
+
+      const seenIds = new Set();
+      const merged = [];
+      rawLists.forEach(list => list.forEach(r => {
+        const key = r.media_type + '-' + r.id;
+        if (seenIds.has(key) || !r.poster_path || (r.media_type !== 'movie' && r.media_type !== 'tv')) return;
+        seenIds.add(key); merged.push(r);
+      }));
+      const base = merged.slice(0, 900).map((r, i) => ({
+        id: r.media_type + '-' + r.id, tmdbId: r.id, mediaType: r.media_type,
+        title: r.title || r.name,
+        genres: (r.genre_ids || []).map(id => genreMap[id]).filter(Boolean),
+        poster: 'https://image.tmdb.org/t/p/w500' + r.poster_path,
+        blurb: r.overview || 'Sin sinopsis disponible.',
+        type: r.media_type === 'movie' ? 'Película' : 'Serie',
+        grad: FALLBACK_GRADS[i % FALLBACK_GRADS.length]
+      }));
+      const extras = await Promise.all(base.map(item => this.fetchExtra(item)));
+      let catalog = base.map((item, i) => ({ ...item, ...extras[i] }));
+
+      const ICONIC = [
+        ['tv', 1396], ['tv', 1399], ['tv', 1668], ['tv', 1402], ['tv', 66732], ['tv', 70523],
+        ['tv', 71446], ['tv', 60059], ['tv', 87108], ['tv', 2316], ['tv', 1418], ['tv', 85552],
+        ['tv', 63174], ['tv', 60574], ['tv', 1100],
+        ['movie', 278], ['movie', 238], ['movie', 155], ['movie', 27205], ['movie', 680], ['movie', 13], ['movie', 550]
+      ];
+      const existingIds = new Set(catalog.map(t => t.id));
+      const iconicResults = await Promise.all(ICONIC.map(([mt, id]) => existingIds.has(mt + '-' + id) ? null : this.fetchIconicItem(mt, id)));
+      const iconicItems = iconicResults.filter(Boolean);
+      catalog = catalog.concat(iconicItems);
+
+      const collectionIds = Array.from(new Set(catalog.filter(t => t.collectionId).map(t => t.collectionId)));
+      const knownMovieIds = new Set(catalog.filter(t => t.mediaType === 'movie').map(t => t.tmdbId));
+      const completions = await Promise.all(collectionIds.map(cid => this.tmdbFetch('/collection/' + cid + '?language=es-ES').catch(() => null)));
+      const extraParts = [];
+      completions.forEach(coll => {
+        if (!coll || !coll.parts) return;
+        const anchor = catalog.find(t => t.collectionId === coll.id);
+        coll.parts.forEach(p => {
+          if (!p.poster_path || knownMovieIds.has(p.id)) return;
+          knownMovieIds.add(p.id);
+          extraParts.push({
+            id: 'movie-' + p.id, tmdbId: p.id, mediaType: 'movie', title: p.title,
+            genres: anchor ? anchor.genres : [], poster: 'https://image.tmdb.org/t/p/w500' + p.poster_path,
+            blurb: p.overview || 'Sin sinopsis disponible.', type: 'Película',
+            grad: FALLBACK_GRADS[p.id % FALLBACK_GRADS.length],
+            collectionName: coll.name, collectionId: coll.id
+          });
+        });
+      });
+      if (extraParts.length) {
+        const extraExtras = await Promise.all(extraParts.map(item => this.fetchExtra(item)));
+        const completedParts = extraParts.map((item, i) => ({ ...item, ...extraExtras[i] }));
+        catalog = catalog.concat(completedParts);
+      }
+
+      this.setState({ catalog, catalogLoading: false });
+      if (!this.state.isDemo && this.sb && this.state.profile) {
+        const rows = catalog.map(t => ({ id: t.id, tmdb_id: t.tmdbId, media_type: t.mediaType, title: t.title, genres: t.genres, poster: t.poster, backdrop: t.backdrop, blurb: t.blurb, type: t.type, duration: t.duration, platform: t.platform, platforms: t.platforms, adult: t.adult, collection_name: t.collectionName, updated_at: new Date().toISOString() }));
+        this.sb.from('nextplay_catalog').upsert(rows).then(() => {}).catch(() => {});
+      }
+    } catch (e) {
+      this.setState({ catalog: [], catalogLoading: false });
+    }
+  }
+
+  async refreshCatalog() {
+    this.setState({ catalogLoading: true, screen: 'home' });
+    await this.fetchAndStoreCatalogFromTMDB();
+  }
+
+  async componentDidMount() {
+    this.updateSize();
+    window.addEventListener('resize', this.updateSize.bind(this));
+    this._mq = window.matchMedia('(min-width: 860px)');
+    this._mqHandler = () => this.updateSize();
+    if (this._mq.addEventListener) this._mq.addEventListener('change', this._mqHandler);
+    else this._mq.addListener(this._mqHandler);
+    if (window.ResizeObserver) {
+      this._ro = new ResizeObserver(() => this.updateSize());
+      this._ro.observe(document.documentElement);
+    }
+    this.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'implicit' } });
+    this.loadCatalog();
+    const { data: { session } } = await this.sb.auth.getSession();
+    await this.handleSession(session);
+    this.sb.auth.onAuthStateChange((_event, session) => { this.handleSession(session); });
+  }
+
+  updateSize() {
+    const w = document.documentElement.clientWidth || window.innerWidth;
+    const isDesktop = w >= 860;
+    if (isDesktop !== this.state.isDesktop) this.setState({ isDesktop });
+  }
+
+  async handleSession(session) {
+    if (!session) { this.setState({ session: null, screen: 'auth' }); return; }
+    this.setState({ session });
+    const { data: profile } = await this.sb.from('nextplay_profiles').select('*').eq('id', session.user.id).maybeSingle();
+    if (!profile) { this.setState({ screen: 'setup' }); return; }
+    await this.loadUserData(profile);
+  }
+
+  async loadUserData(profile) {
+    const [{ data: ratingsRows }, { data: listRows }] = await Promise.all([
+      this.sb.from('nextplay_ratings').select('title_id,stars').eq('user_id', profile.id),
+      this.sb.from('nextplay_list').select('title_id').eq('user_id', profile.id)
+    ]);
+    const ratings = {};
+    (ratingsRows || []).forEach(r => { ratings[r.title_id] = r.stars; });
+    const { data: dismissedRows } = await this.sb.from('nextplay_dismissed').select('title_id').eq('user_id', profile.id);
+    const { data: watchedRows } = await this.sb.from('nextplay_watched').select('title_id,times_watched,last_watched_at').eq('user_id', profile.id);
+    const watched = {};
+    (watchedRows || []).forEach(w => { watched[w.title_id] = { times: w.times_watched, last: w.last_watched_at }; });
+    this.setState({ profile, ratings, list: (listRows || []).map(r => r.title_id), dismissed: (dismissedRows || []).map(r => r.title_id), watched, screen: 'home' });
+    this.loadHousehold(profile);
+  }
+
+  async loadHousehold(profile) {
+    if (this.state.isDemo) return;
+    const { data: others } = await this.sb.from('nextplay_profiles').select('id,name').eq('household_id', profile.household_id).neq('id', profile.id);
+    if (!others || !others.length) return;
+    const partner = others[0];
+    const { data: rows } = await this.sb.from('nextplay_ratings').select('title_id,stars').eq('user_id', partner.id);
+    const partnerRatings = {};
+    (rows || []).forEach(r => { partnerRatings[r.title_id] = r.stars; });
+    this.setState({ householdRatings: { name: partner.name, ratings: partnerRatings } });
+  }
+
+  onEmailChange(e) { this.setState({ emailValue: e.target.value }); }
+  onNameChange(e) { this.setState({ nameValue: e.target.value }); }
+  onCodeChange(e) { this.setState({ codeValue: e.target.value }); }
+  onInviteChange(e) { this.setState({ inviteValue: e.target.value }); }
+  onEditNameChange(e) { this.setState({ editNameValue: e.target.value }); }
+
+  async sendMagicLink() {
+    if (!this.state.emailValue.includes('@')) { this.setState({ authMessage: 'Escribe un correo válido' }); return; }
+    this.setState({ authMessage: 'Enviando…' });
+    const { error } = await this.sb.auth.signInWithOtp({ email: this.state.emailValue, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin } });
+    this.setState({ authMessage: error ? error.message : 'Te hemos mandado un enlace de acceso.', isCodeStep: !error });
+    if (!error) this.startResendCooldown();
+  }
+
+  startResendCooldown() {
+    clearInterval(this._resendTimer);
+    this.setState({ resendIn: 60 });
+    this._resendTimer = setInterval(() => {
+      const next = this.state.resendIn - 1;
+      if (next <= 0) { clearInterval(this._resendTimer); this.setState({ resendIn: 0 }); }
+      else this.setState({ resendIn: next });
+    }, 1000);
+  }
+
+  async resendCode() { if (this.state.resendIn > 0) return; await this.sendMagicLink(); }
+
+  async onAvatarFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (this.state.isDemo) { this.setState({ avatarUrl: URL.createObjectURL(file), avatarLabel: 'Cambiar foto' }); return; }
+    this.setState({ avatarLabel: 'Subiendo…' });
+    const uid = this.state.session.user.id;
+    const path = uid + '/' + Date.now() + '-' + file.name;
+    const { error } = await this.sb.storage.from('avatars').upload(path, file, { upsert: true });
+    if (error) { this.setState({ avatarLabel: 'Error al subir' }); return; }
+    const { data } = this.sb.storage.from('avatars').getPublicUrl(path);
+    this.setState({ avatarUrl: data.publicUrl, avatarLabel: 'Cambiar foto' });
+    if (this.state.profile) await this.sb.from('nextplay_profiles').update({ avatar_url: data.publicUrl }).eq('id', uid);
+  }
+
+  async createProfile() {
+    if (!this.state.nameValue.trim()) return;
+    const uid = this.state.session.user.id;
+    const code = this.state.inviteValue.trim();
+    let householdId = null, role = 'admin';
+    if (code) {
+      const { data: invite } = await this.sb.from('nextplay_invites').select('household_id').eq('code', code).maybeSingle();
+      if (!invite) { this.setState({ authMessage: 'Código de invitación no válido.' }); return; }
+      householdId = invite.household_id; role = 'member';
+    }
+    const insertRow = { id: uid, name: this.state.nameValue.trim(), role };
+    if (householdId) insertRow.household_id = householdId;
+    if (this.state.avatarUrl) insertRow.avatar_url = this.state.avatarUrl;
+    const { data: profile, error } = await this.sb.from('nextplay_profiles').insert(insertRow).select().single();
+    if (error) { this.setState({ authMessage: error.message }); return; }
+    this.setState({ profile, screen: 'platforms' });
+  }
+
+  togglePlatformSel(name) {
+    const sel = this.state.platformSelection.indexOf(name) !== -1
+      ? this.state.platformSelection.filter(p => p !== name)
+      : [...this.state.platformSelection, name];
+    this.setState({ platformSelection: sel });
+  }
+
+  async savePlatforms() {
+    if (!this.state.isDemo && this.state.profile) {
+      await this.sb.from('nextplay_profiles').update({ platforms: this.state.platformSelection }).eq('id', this.state.profile.id);
+    }
+    this.setState({ profile: { ...this.state.profile, platforms: this.state.platformSelection }, screen: 'seed' });
+  }
+
+  async skipPlatforms() { this.setState({ screen: 'seed' }); }
+
+  onSeedQueryChange(e) { this.setState({ seedQuery: e.target.value }); }
+
+  toggleSeed(titleId) {
+    const seeded = this.state.seededIds.indexOf(titleId) !== -1
+      ? this.state.seededIds.filter(id => id !== titleId)
+      : [...this.state.seededIds, titleId];
+    this.setState({ seededIds: seeded });
+  }
+
+  async finishSeed() {
+    for (const id of this.state.seededIds) { await this.rate(id, 4); }
+    await this.finishOnboarding();
+  }
+
+  async finishOnboarding() {
+    if (this.state.isDemo) { this.setState({ screen: 'home' }); return; }
+    await this.loadUserData(this.state.profile);
+  }
+
+  goCollections() { this.setState({ screen: 'collections' }); }
+  openCollection(name) { this.setState({ collectionFilter: name, screen: 'explore', searchQuery: '', explorePlatform: 'Todo', exploreGenre: 'Todo', exploreVisibleCount: 24 }); }
+
+  async signOut() {
+    if (this.state.isDemo) { this.setState({ screen: 'auth', profile: null, isDemo: false, ratings: {}, list: [] }); return; }
+    await this.sb.auth.signOut(); this.setState({ screen: 'auth', profile: null });
+  }
+
+  startDemo() {
+    const CAT = this.state.catalog;
+    const ratings = {};
+    const watched = {};
+    let list = [];
+    if (CAT.length >= 3) {
+      ratings[CAT[0].id] = 5; watched[CAT[0].id] = { times: 1, last: new Date().toISOString() };
+      ratings[CAT[1].id] = 4; watched[CAT[1].id] = { times: 1, last: new Date().toISOString() };
+      list = [CAT[2].id];
+    }
+    this.setState({ isDemo: true, profile: { id: 'demo', name: 'Tú', role: 'admin', household_id: 'demo' }, ratings, watched, list, screen: 'home' });
+  }
+
+  goHome() { this.setState({ screen: 'home' }); }
+  goExplore() { this.setState({ screen: 'explore', collectionFilter: null }); }
+  goIndecisive() { this.setState({ screen: 'indecisive', swipeIndex: 0 }); }
+
+  async dismiss(titleId) {
+    const dismissed = [...this.state.dismissed, titleId];
+    this.setState({ dismissed });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_dismissed').insert({ user_id: this.state.profile.id, title_id: titleId });
+  }
+
+  shareTitle(title) {
+    const url = window.location.origin + '#' + title.id;
+    if (navigator.share) navigator.share({ title: title.title, text: title.title + ' en Nextplay', url }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url);
+  }
+
+  swipePass() { this.setState({ swipeIndex: this.state.swipeIndex + 1 }); }
+  onSearchChange(e) { this.setState({ searchQuery: e.target.value, exploreVisibleCount: 24 }); }
+  goList() { this.setState({ screen: 'list' }); }
+  goRatings() { this.setState({ screen: 'ratings' }); }
+  goProfileHub() { this.setState({ screen: 'profileHub', editNameValue: this.state.profile.name }); }
+  goNotifications() { this.setState({ screen: 'notifications' }); }
+  goHistory() { this.setState({ screen: 'history' }); }
+  goSettings() { this.setState({ screen: 'settings' }); }
+  goPlatforms() { this.setState({ platformSelection: (this.state.profile && this.state.profile.platforms) || [], screen: 'platforms' }); }
+  openDetail(id) { this.setState({ screen: 'detail', selectedId: id }); }
+  backFromDetail() { this.setState({ screen: 'home' }); }
+  toggleNotifPref() { this.setState({ notifPrefOn: !this.state.notifPrefOn }); }
+
+  async toggleFamilyMode() {
+    const next = !(this.state.profile.family_mode);
+    this.setState({ profile: { ...this.state.profile, family_mode: next } });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_profiles').update({ family_mode: next }).eq('id', this.state.profile.id);
+  }
+
+  goMembers() {
+    this.loadMembers(this.state.profile);
+    this.setState({ screen: 'members' });
+  }
+
+  async loadMembers(profile) {
+    const grads = ['linear-gradient(155deg,#FF8556,#D6431A)', 'linear-gradient(155deg,#3FCFC0,#0E7C74)', 'linear-gradient(155deg,#B98CF0,#6B3AC2)', 'linear-gradient(155deg,#F0D65C,#B8912A)'];
+    if (this.state.isDemo) {
+      this.setState({ members: [{ name: profile.name, role: 'admin', grad: grads[0], avatarBg: this.state.avatarUrl ? 'url(' + this.state.avatarUrl + ')' : grads[0], roleLabel: 'Admin', badgeBg: 'rgba(255,90,45,0.16)', badgeColor: '#FF8A63' }] });
+      return;
+    }
+    const { data } = await this.sb.from('nextplay_profiles').select('id,name,role,avatar_url').eq('household_id', profile.household_id);
+    const members = (data || []).map((m, i) => ({ name: m.name, role: m.role, grad: grads[i % grads.length], avatarBg: m.avatar_url ? 'url(' + m.avatar_url + ')' : grads[i % grads.length], roleLabel: m.role === 'admin' ? 'Admin' : 'Miembro', badgeBg: m.role === 'admin' ? 'rgba(255,90,45,0.16)' : '#22222A', badgeColor: m.role === 'admin' ? '#FF8A63' : '#A9A6AF' }));
+    this.setState({ members });
+  }
+
+  async createInvite() {
+    const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    await this.sb.from('nextplay_invites').insert({ code, household_id: this.state.profile.household_id, created_by: this.state.profile.id });
+    this.setState({ inviteCode: code });
+  }
+
+  async saveProfileEdits() {
+    const name = this.state.editNameValue.trim();
+    if (!name) return;
+    const profile = { ...this.state.profile, name, avatar_url: this.state.avatarUrl || this.state.profile.avatar_url };
+    this.setState({ profile });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_profiles').update({ name, avatar_url: this.state.avatarUrl || undefined }).eq('id', profile.id);
+  }
+
+  async rate(titleId, stars) {
+    const ratings = { ...this.state.ratings, [titleId]: stars };
+    this.setState({ ratings });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_ratings').upsert({ user_id: this.state.profile.id, title_id: titleId, stars });
+    if (!this.state.watched[titleId]) await this.markWatched(titleId);
+  }
+
+  async markWatched(titleId) {
+    const existing = this.state.watched[titleId];
+    const times = (existing ? existing.times : 0) + 1;
+    const now = new Date().toISOString();
+    this.setState({ watched: { ...this.state.watched, [titleId]: { times, last: now } } });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_watched').upsert({ user_id: this.state.profile.id, title_id: titleId, times_watched: times, last_watched_at: now });
+  }
+
+  async unmarkWatched(titleId) {
+    const watched = { ...this.state.watched };
+    delete watched[titleId];
+    this.setState({ watched });
+    if (this.state.isDemo) return;
+    await this.sb.from('nextplay_watched').delete().eq('user_id', this.state.profile.id).eq('title_id', titleId);
+  }
+
+  async toggleList(titleId) {
+    const inList = this.state.list.indexOf(titleId) !== -1;
+    const list = inList ? this.state.list.filter(id => id !== titleId) : [...this.state.list, titleId];
+    this.setState({ list });
+    if (this.state.isDemo) return;
+    const userId = this.state.profile.id;
+    if (inList) await this.sb.from('nextplay_list').delete().eq('user_id', userId).eq('title_id', titleId);
+    else await this.sb.from('nextplay_list').insert({ user_id: userId, title_id: titleId });
+  }
+
+  tokenize(text) {
+    return new Set((text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 3 && !STOPWORDS.has(w)));
+  }
+
+  wordsOf(title) {
+    if (!title._words) title._words = this.tokenize(title.blurb);
+    return title._words;
+  }
+
+  jaccard(a, b) {
+    if (!a.size || !b.size) return 0;
+    let inter = 0;
+    a.forEach(w => { if (b.has(w)) inter++; });
+    return inter / (a.size + b.size - inter);
+  }
+
+  similarity(a, b) {
+    const genreUnion = new Set([...a.genres, ...b.genres]);
+    const genreInter = a.genres.filter(g => b.genres.includes(g)).length;
+    const genreSim = genreUnion.size ? genreInter / genreUnion.size : 0;
+    const synopsisSim = this.jaccard(this.wordsOf(a), this.wordsOf(b));
+    const typeSim = a.type === b.type ? 1 : 0;
+    return genreSim * 0.55 + synopsisSim * 0.25 + typeSim * 0.20;
+  }
+
+  scoreWith(title, ratings) {
+    const ratedIds = Object.keys(ratings);
+    if (!ratedIds.length) return 50;
+    let weightedSum = 0, weightTotal = 0;
+    ratedIds.forEach(rid => {
+      const rated = this.state.catalog.find(c => c.id === rid);
+      if (!rated || rid === title.id) return;
+      const sim = this.similarity(title, rated);
+      const starWeight = ratings[rid] - 3;
+      weightedSum += sim * starWeight;
+      weightTotal += Math.abs(starWeight) || 0.15;
+    });
+    if (!weightTotal) return 50;
+    const score = 50 + (weightedSum / weightTotal) * 48;
+    return Math.max(5, Math.min(98, Math.round(score)));
+  }
+
+  scoreFor(title) { return this.scoreWith(title, this.state.ratings); }
+
+  reasonFor(title) {
+    const ratings = this.state.ratings;
+    const ratedIds = Object.keys(ratings).filter(rid => ratings[rid] >= 4);
+    if (!ratedIds.length) return 'Recomendación general para empezar a conocer tus gustos.';
+    let best = null, bestSim = -1, bestRid = null;
+    ratedIds.forEach(rid => {
+      const rated = this.state.catalog.find(c => c.id === rid);
+      if (!rated || rid === title.id) return;
+      const sim = this.similarity(title, rated);
+      if (sim > bestSim) { bestSim = sim; best = rated; bestRid = rid; }
+    });
+    if (!best || bestSim <= 0.03) return 'Recomendación general para empezar a conocer tus gustos.';
+    const sharedGenres = title.genres.filter(g => best.genres.includes(g));
+    const synopsisSim = this.jaccard(this.wordsOf(title), this.wordsOf(best));
+    const parts = [];
+    if (sharedGenres.length) parts.push('comparten ' + sharedGenres.join(', ').toLowerCase());
+    if (synopsisSim > 0.04) parts.push('una trama parecida');
+    if (title.type === best.type && !parts.length) parts.push('el mismo formato');
+    const detail = parts.length ? parts.join(' y ') : 'un tono similar';
+    return 'Porque valoraste ' + ratings[bestRid] + '★ ' + best.title + ' y ' + detail + '.';
+  }
+
+  buildCard(title) {
+    return { id: title.id, title: title.title, platform: title.platform, genres: title.genres.join(' · '), grad: title.grad, posterBg: title.poster ? 'url(' + title.poster + ')' : title.grad, score: this.scoreFor(title), open: () => this.openDetail(title.id) };
+  }
+
+  backdropBg(title) {
+    return title.backdrop ? 'url(' + title.backdrop + ')' : (title.poster ? 'url(' + title.poster + ')' : title.grad);
+  }
+
+  renderVals() {
+    const screen = this.state.screen;
+    const isDesktop = this.state.isDesktop;
+    const CAT = this.state.catalog;
+    const catalogReady = CAT.length > 0;
+    const ratings = this.state.ratings;
+    const watchedIds = Object.keys(this.state.watched);
+    const excluded = watchedIds.concat(this.state.dismissed);
+    const moodFilter = this.state.moodFilter;
+    const familyMode = this.state.profile && this.state.profile.family_mode;
+    let unseen = CAT.filter(t => excluded.indexOf(t.id) === -1 && (!familyMode || !t.adult));
+    if (moodFilter) unseen = unseen.filter(t => t.genres.indexOf(moodFilter) !== -1);
+    const myPlatforms = (this.state.profile && this.state.profile.platforms) || [];
+    if (myPlatforms.length) {
+      const onMyPlatforms = unseen.filter(t => (t.platforms || []).some(p => myPlatforms.indexOf(p) !== -1));
+      if (onMyPlatforms.length) unseen = onMyPlatforms;
+    }
+    const scored = unseen.map(t => ({ t, score: this.scoreFor(t) })).sort((a, b) => b.score - a.score);
+    const emptyTitle = { id: '', title: '', genres: [], platform: '', grad: FALLBACK_GRADS[0], blurb: '' };
+    const heroT = (scored[0] || unseen[0] || { t: CAT[0] || emptyTitle }).t || CAT[0] || emptyTitle;
+    const recommended = scored.slice(1, 5).map(s => this.buildCard(s.t));
+    const heroPosterBg = this.backdropBg(heroT);
+
+    if (!catalogReady) {
+      return {
+        isLoading: false, isAuth: screen === 'auth', isSetup: screen === 'setup', isPlatforms: screen === 'platforms',
+        isSeed: screen === 'seed', seedQuery: '', onSeedQueryChange: () => {}, seedResults: [], finishSeed: () => {},
+        isCollections: false, goCollections: () => {}, collections: [], hasCollections: false,
+        isAppScreen: ['home', 'explore', 'detail', 'list', 'ratings', 'members', 'notifications', 'settings', 'profileHub', 'collections', 'history'].indexOf(screen) !== -1,
+        isHistory: screen === 'history', goHistory: () => this.goHistory(), historyItems: [], hasHistory: false, historyMoviesCount: 0, historySeriesCount: 0,
+        isCatalogLoading: true, isCatalogReady: false, isIndecisive: false,
+        isDesktop, isMobile: !isDesktop, navActive: 'home',
+        navBg: {}, navColor: {},
+        emailValue: this.state.emailValue, onEmailChange: e => this.onEmailChange(e), sendMagicLink: () => this.sendMagicLink(), authMessage: this.state.authMessage,
+        isCodeStep: this.state.isCodeStep, isEmailStep: !this.state.isCodeStep,
+        resendCode: () => this.resendCode(), resendLabel: 'Reenviar código', resendColor: '#6E6C76', resendCursor: 'default', startDemo: () => this.startDemo(),
+        nameValue: this.state.nameValue, onNameChange: e => this.onNameChange(e), createProfile: () => this.createProfile(),
+        inviteValue: this.state.inviteValue, onInviteChange: e => this.onInviteChange(e),
+        avatarBg: 'linear-gradient(155deg,#2A2A32,#141418)', avatarPlaceholderText: 'Foto', avatarLabel: this.state.avatarLabel, onAvatarFile: e => this.onAvatarFile(e),
+        platformToggles: [], savePlatforms: () => this.savePlatforms(), skipPlatforms: () => this.skipPlatforms(),
+        currentProfile: { grad: 'linear-gradient(155deg,#2A2A32,#141418)', avatarBg: 'linear-gradient(155deg,#2A2A32,#141418)', name: '', initial: '?', roleLabel: '' }, signOut: () => this.signOut(),
+        goHome: () => this.goHome(), goExplore: () => this.goExplore(), goList: () => this.goList(), goRatings: () => this.goRatings(),
+        goProfileHub: () => this.goProfileHub(), goMembers: () => this.goMembers(), goNotifications: () => this.goNotifications(), goSettings: () => this.goSettings(), goPlatforms: () => this.goPlatforms(),
+        contentPadding: '18px 20px 10px', heroHeight: '150px', detailHeroHeight: '220px', recGridDisplay: 'flex', recGridCols: 'repeat(2,minmax(0,1fr))'
+      };
+    }
+
+    let together = null, hasHousehold = false, partnerName = '';
+    if (this.state.householdRatings) {
+      hasHousehold = true; partnerName = this.state.householdRatings.name;
+      const combined = { ...this.state.householdRatings.ratings, ...ratings };
+      const bothSeen = new Set([...Object.keys(ratings), ...Object.keys(this.state.householdRatings.ratings)]);
+      const candidates = CAT.filter(t => !bothSeen.has(t.id));
+      const best = candidates.map(t => ({ t, score: this.scoreWith(t, combined) })).sort((a, b) => b.score - a.score)[0];
+      if (best) together = { title: best.t.title, genres: best.t.genres.join(' · '), platform: best.t.platform, grad: best.t.grad, posterBg: this.backdropBg(best.t), score: best.score, open: () => this.openDetail(best.t.id) };
+    }
+
+    let selected = null;
+    if (this.state.selectedId) {
+      const _selTitle = CAT.find(c => c.id === this.state.selectedId) || emptyTitle;
+      const title = _selTitle;
+      const currentRating = ratings[title.id] || 0;
+      const inList = this.state.list.indexOf(title.id) !== -1;
+      const watchInfo = this.state.watched[title.id];
+      selected = {
+        title: title.title, platform: title.platform, duration: title.duration, type: title.type,
+        grad: title.grad, posterBg: this.backdropBg(title), blurb: title.blurb, showScore: !currentRating,
+        score: this.scoreFor(title), reason: this.reasonFor(title),
+        listLabel: inList ? '✓ En mi lista' : '+ Añadir a mi lista',
+        listColor: inList ? '#FF8A63' : '#F2EFEA',
+        toggleList: () => this.toggleList(title.id),
+        ratingHint: currentRating ? 'Tu valoración: ' + currentRating + ' de 5' : 'Puntúa para mejorar tus recomendaciones',
+        stars: [1, 2, 3, 4, 5].map(n => ({ n, color: n <= currentRating ? '#FF5A2D' : '#3A3A44', onClick: () => this.rate(title.id, n) })),
+        share: () => this.shareTitle(title), dismiss: () => { this.dismiss(title.id); this.backFromDetail(); },
+        isWatched: !!watchInfo, watchedLabel: watchInfo ? '✓ Vista' + (watchInfo.times > 1 ? ' · x' + watchInfo.times : '') : 'Marcar como vista',
+        watchedColor: watchInfo ? '#FF8A63' : '#F2EFEA',
+        toggleWatched: () => watchInfo ? this.unmarkWatched(title.id) : this.markWatched(title.id),
+        rewatch: () => this.markWatched(title.id)
+      };
+    }
+
+    const listItems = CAT.filter(t => this.state.list.indexOf(t.id) !== -1).map(t => this.buildCard(t));
+    const ratedItems = Object.keys(ratings).map(rid => {
+      const t = CAT.find(c => c.id === rid);
+      if (!t) return null;
+      const stars = ratings[rid];
+      return { title: t.title, genres: t.genres.join(' · '), grad: t.grad, posterBg: t.poster ? 'url(' + t.poster + ')' : t.grad, starsText: '★'.repeat(stars) + '☆'.repeat(5 - stars), open: () => this.openDetail(t.id) };
+    }).filter(Boolean);
+
+    const allPlatforms = PLATFORMS.filter(p => CAT.some(t => (t.platforms || []).indexOf(p) !== -1));
+    const explorePlatform = this.state.explorePlatform;
+    const platformTabs = ['Todo', ...allPlatforms].map(p => ({
+      name: p, select: () => this.setState({ explorePlatform: p, exploreVisibleCount: 24 }),
+      bg: p === explorePlatform ? '#F2EFEA' : 'transparent', color: p === explorePlatform ? '#08080A' : '#A9A6AF',
+      hasLogo: !!PLATFORM_LOGOS[p], logoBg: PLATFORM_LOGOS[p] ? 'url(' + PLATFORM_LOGOS[p] + ')' : 'none'
+    }));
+    const allGenres = Array.from(new Set(CAT.flatMap(t => t.genres))).sort();
+    const exploreGenre = this.state.exploreGenre;
+    const genreTabs = ['Todo', ...allGenres].map(g => ({
+      name: g, select: () => this.setState({ exploreGenre: g, exploreVisibleCount: 24 }),
+      bg: g === exploreGenre ? '#F2EFEA' : 'transparent', color: g === exploreGenre ? '#08080A' : '#A9A6AF'
+    }));
+    const q = this.state.searchQuery.trim().toLowerCase();
+    const exploreItems = CAT.filter(t =>
+      (!familyMode || !t.adult) &&
+      (explorePlatform === 'Todo' || (t.platforms && t.platforms.indexOf(explorePlatform) !== -1) || t.platform === explorePlatform) &&
+      (exploreGenre === 'Todo' || t.genres.indexOf(exploreGenre) !== -1) &&
+      (!q || t.title.toLowerCase().indexOf(q) !== -1)
+    ).filter(t => !this.state.collectionFilter || t.collectionName === this.state.collectionFilter)
+    .map(t => this.buildCard(t)).sort((a, b) => b.score - a.score);
+    const exploreVisible = exploreItems.slice(0, this.state.exploreVisibleCount);
+    const hasMoreExplore = exploreItems.length > exploreVisible.length;
+
+    const historyIds = Object.keys(this.state.watched);
+    const historyTab = this.state.historyTab;
+    let historyItemsAll = historyIds.map(id => {
+      const t = CAT.find(c => c.id === id);
+      if (!t) return null;
+      const w = this.state.watched[id];
+      const days = Math.floor((Date.now() - new Date(w.last).getTime()) / 86400000);
+      const lastLabel = days <= 0 ? 'Hoy' : days === 1 ? 'Ayer' : 'Hace ' + days + ' días';
+      return { title: t.title, type: t.type, grad: t.grad, posterBg: t.poster ? 'url(' + t.poster + ')' : t.grad, lastLabel, timesLabel: w.times > 1 ? 'x' + w.times : '', open: () => this.openDetail(t.id) };
+    }).filter(Boolean);
+    const historyItems = historyTab === 'all' ? historyItemsAll : historyItemsAll.filter(h => (historyTab === 'movies' ? h.type === 'Película' : h.type === 'Serie'));
+    const historyMoviesCount = historyIds.filter(id => { const t = CAT.find(c => c.id === id); return t && t.type === 'Película'; }).length;
+    const historySeriesCount = historyIds.length - historyMoviesCount;
+    const historyTabs = [
+      { key: 'all', label: 'Todas' }, { key: 'movies', label: 'Pelis' }, { key: 'series', label: 'Series' }
+    ].map(t => ({ label: t.label, select: () => this.setState({ historyTab: t.key }), bg: historyTab === t.key ? '#F2EFEA' : '#141418', color: historyTab === t.key ? '#08080A' : '#C8C5CE' }));
+
+    const collectionCounts = {};
+    CAT.forEach(t => { if (t.collectionName) collectionCounts[t.collectionName] = (collectionCounts[t.collectionName] || 0) + 1; });
+    const collections = Object.keys(collectionCounts).filter(name => collectionCounts[name] > 1)
+      .sort((a, b) => collectionCounts[b] - collectionCounts[a])
+      .map((name, i) => ({ name, count: collectionCounts[name], initial: name[0].toUpperCase(), badgeGrad: FALLBACK_GRADS[i % FALLBACK_GRADS.length], open: () => this.openCollection(name) }));
+
+    const genreCounts = {};
+    CAT.forEach(t => t.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }));
+    const topGenres = Object.keys(genreCounts).sort((a, b) => genreCounts[b] - genreCounts[a]).slice(0, 4);
+    const moodChips = topGenres.map(g => ({
+      label: g, select: () => this.setState({ moodFilter: this.state.moodFilter === g ? null : g }),
+      bg: this.state.moodFilter === g ? '#F2EFEA' : '#141418', color: this.state.moodFilter === g ? '#08080A' : '#C8C5CE'
+    }));
+
+    const swipePool = CAT.filter(t => excluded.indexOf(t.id) === -1 && (!familyMode || !t.adult));
+    const swipeT = swipePool[this.state.swipeIndex % Math.max(swipePool.length, 1)];
+    const swipeCard = swipeT ? {
+      title: swipeT.title, genres: swipeT.genres.join(' · '), platform: swipeT.platform, grad: swipeT.grad, blurb: swipeT.blurb,
+      posterBg: this.backdropBg(swipeT), score: this.scoreFor(swipeT), pass: () => this.swipePass(), open: () => this.openDetail(swipeT.id)
+    } : null;
+
+    const platformToggles = PLATFORMS.map(p => {
+      const on = this.state.platformSelection.indexOf(p) !== -1;
+      return { name: p, toggle: () => this.togglePlatformSel(p), check: on ? '✓' : '', checkBg: on ? '#FF5A2D' : 'transparent', borderColor: on ? '#FF5A2D' : 'rgba(255,255,255,0.25)', logoBg: PLATFORM_LOGOS[p] ? 'url(' + PLATFORM_LOGOS[p] + ')' : 'none' };
+    });
+
+    const myPlatformsForInsight = (this.state.profile && this.state.profile.platforms) || [];
+    const platformInsights = myPlatformsForInsight.map(p => {
+      const count = CAT.filter(t => (t.platforms || []).indexOf(p) !== -1 && (Object.keys(ratings).indexOf(t.id) !== -1 || this.state.list.indexOf(t.id) !== -1)).length;
+      return count === 0
+        ? { name: p, text: 'Sin actividad todavía · valora pausarla', color: '#FF8A63' }
+        : { name: p, text: count + ' título' + (count === 1 ? '' : 's') + ' valorado o en tu lista', color: '#8C8A93' };
+    });
+
+    const notifSource = [];
+    if (heroT) notifSource.push({ text: heroT.title + ' te encajaría, ' + this.scoreFor(heroT) + '% de afinidad.', open: () => this.openDetail(heroT.id) });
+    listItems.slice(0, 1).forEach(t => notifSource.push({ text: 'Sigue pendiente en tu lista: ' + t.title + '.', open: () => this.openDetail(t.id) }));
+    if (together) notifSource.push({ text: 'Con ' + partnerName + ' encajaría ' + together.title + '.', open: together.open });
+
+    const activeMap = { home: 'home', detail: 'home', explore: 'explore', collections: 'collections', list: 'list', ratings: 'ratings', members: 'members', notifications: 'notifications', settings: 'settings', profileHub: 'profile', history: 'history' };
+    const navActive = activeMap[screen] || 'home';
+    const mk = (key) => navActive === key;
+    const isAppScreen = ['home', 'explore', 'detail', 'list', 'ratings', 'members', 'notifications', 'settings', 'profileHub', 'collections', 'history'].indexOf(screen) !== -1;
+    const isAdmin = this.state.profile && this.state.profile.role === 'admin';
+    const hasAvatarNow = this.state.avatarUrl || (this.state.profile && this.state.profile.avatar_url);
+
+    return {
+      isLoading: screen === 'loading', isAuth: screen === 'auth', isSetup: screen === 'setup', isPlatforms: screen === 'platforms', isAppScreen,
+      isHome: screen === 'home', isExplore: screen === 'explore', isDetail: screen === 'detail', isList: screen === 'list', isRatings: screen === 'ratings',
+      isMembers: screen === 'members', isNotifications: screen === 'notifications', isSettings: screen === 'settings', isProfileHub: screen === 'profileHub',
+      isHistory: screen === 'history', goHistory: () => this.goHistory(),
+      isDesktop, isMobile: !isDesktop, navActive,
+      contentPadding: isDesktop ? '32px 40px' : '18px 20px 10px',
+      heroHeight: isDesktop ? '280px' : '150px',
+      detailHeroHeight: isDesktop ? '320px' : '220px',
+      recGridDisplay: isDesktop ? 'grid' : 'flex', recGridCols: 'repeat(2,minmax(0,1fr))',
+      navBg: Object.fromEntries(['home', 'explore', 'collections', 'list', 'history', 'ratings', 'members', 'notifications', 'settings', 'profile'].map(k => [k, mk(k) ? 'rgba(255,90,45,0.14)' : 'transparent'])),
+      navColor: Object.fromEntries(['home', 'explore', 'collections', 'list', 'history', 'ratings', 'members', 'notifications', 'settings', 'profile'].map(k => [k, mk(k) ? '#FF8A63' : '#A9A6AF'])),
+      emailValue: this.state.emailValue, onEmailChange: e => this.onEmailChange(e), sendMagicLink: () => this.sendMagicLink(), authMessage: this.state.authMessage,
+      isCodeStep: this.state.isCodeStep, isEmailStep: !this.state.isCodeStep,
+      resendCode: () => this.resendCode(), resendLabel: this.state.resendIn > 0 ? 'Reenviar código (' + this.state.resendIn + 's)' : 'Reenviar código',
+      resendColor: this.state.resendIn > 0 ? '#6E6C76' : '#FF8A63', resendCursor: this.state.resendIn > 0 ? 'default' : 'pointer',
+      startDemo: () => this.startDemo(),
+      nameValue: this.state.nameValue, onNameChange: e => this.onNameChange(e), createProfile: () => this.createProfile(),
+      inviteValue: this.state.inviteValue, onInviteChange: e => this.onInviteChange(e),
+      avatarBg: this.state.avatarUrl ? 'url(' + this.state.avatarUrl + ')' : (this.state.profile && this.state.profile.avatar_url ? 'url(' + this.state.profile.avatar_url + ')' : 'linear-gradient(155deg,#2A2A32,#141418)'),
+      avatarPlaceholderText: hasAvatarNow ? '' : 'Foto', avatarLabel: this.state.avatarLabel, onAvatarFile: e => this.onAvatarFile(e),
+      platformToggles, savePlatforms: () => this.savePlatforms(), skipPlatforms: () => this.skipPlatforms(),
+      currentProfile: this.state.profile ? { grad: 'linear-gradient(155deg,#FF8556,#D6431A)', avatarBg: this.state.profile.avatar_url ? 'url(' + this.state.profile.avatar_url + ')' : 'linear-gradient(155deg,#FF8556,#D6431A)', name: this.state.profile.name, initial: (this.state.profile.name || '?')[0].toUpperCase(), roleLabel: isAdmin ? 'Admin' : 'Miembro' } : { grad: 'linear-gradient(155deg,#2A2A32,#141418)', avatarBg: 'linear-gradient(155deg,#2A2A32,#141418)', name: '', initial: '?', roleLabel: '' },
+      signOut: () => this.signOut(),
+      goHome: () => this.goHome(), goExplore: () => this.goExplore(), goList: () => this.goList(), goRatings: () => this.goRatings(),
+      goProfileHub: () => this.goProfileHub(), goMembers: () => this.goMembers(), goNotifications: () => this.goNotifications(), goSettings: () => this.goSettings(), goPlatforms: () => this.goPlatforms(),
+      backFromDetail: () => this.backFromDetail(),
+      isCatalogLoading: false, isCatalogReady: true,
+      hero: { title: heroT.title, genres: heroT.genres.join(' · '), platform: heroT.platform, grad: heroT.grad, posterBg: heroPosterBg, score: this.scoreFor(heroT), reason: this.reasonFor(heroT), open: () => this.openDetail(heroT.id), share: () => this.shareTitle(heroT), dismiss: () => this.dismiss(heroT.id) },
+      moodChips, goIndecisive: () => this.goIndecisive(), isIndecisive: screen === 'indecisive', swipeCard, hasSwipeCard: !!swipeCard,
+      isSeed: screen === 'seed',
+      seedQuery: this.state.seedQuery, onSeedQueryChange: e => this.onSeedQueryChange(e),
+      seedResults: (this.state.seedQuery.trim() ? CAT.filter(t => t.title.toLowerCase().indexOf(this.state.seedQuery.trim().toLowerCase()) !== -1) : CAT.slice(0, 12)).slice(0, 20).map(t => {
+        const on = this.state.seededIds.indexOf(t.id) !== -1;
+        return { title: t.title, grad: t.grad, posterBg: t.poster ? 'url(' + t.poster + ')' : t.grad, toggle: () => this.toggleSeed(t.id), borderColor: on ? '#FF5A2D' : 'rgba(255,255,255,0.06)', checkColor: on ? '#FF8A63' : '#6E6C76', checkLabel: on ? '✓ Ya la vi' : 'Marcar' };
+      }),
+      finishSeed: () => this.finishSeed(),
+      isCollections: screen === 'collections', goCollections: () => this.goCollections(),
+      collections, hasCollections: collections.length > 0,
+      historyItems, hasHistory: historyItems.length > 0, hasHistoryEmpty: historyItems.length === 0, historyMoviesCount, historySeriesCount, historyTabs,
+      recommended, selected, hasHousehold, partnerName, together,
+      hasList: listItems.length > 0, hasListEmpty: listItems.length === 0, listItems,
+      hasRatings: ratedItems.length > 0, hasRatingsEmpty: ratedItems.length === 0, ratedItems,
+      isAdmin, members: this.state.members, createInvite: () => this.createInvite(), inviteCode: this.state.inviteCode, hasInviteCode: !!this.state.inviteCode,
+      editNameValue: this.state.editNameValue, onEditNameChange: e => this.onEditNameChange(e), saveProfileEdits: () => this.saveProfileEdits(),
+      platformTabs, genreTabs, exploreItems: exploreVisible, exploreCount: exploreItems.length, hasExploreItems: exploreItems.length > 0,
+      hasMoreExplore, loadMoreExplore: () => this.setState({ exploreVisibleCount: this.state.exploreVisibleCount + 24 }),
+      catalogTotal: CAT.length, catalogMovies: CAT.filter(t => t.type === 'Película').length, catalogSeries: CAT.filter(t => t.type === 'Serie').length,
+      searchQuery: this.state.searchQuery, onSearchChange: e => this.onSearchChange(e),
+      notifications: notifSource, hasNotifications: notifSource.length > 0,
+      userEmail: this.state.session ? this.state.session.user.email : (this.state.isDemo ? 'modo demo' : ''),
+      notifToggleBg: this.state.notifPrefOn ? '#FF5A2D' : '#2A2A32', notifTogglePos: this.state.notifPrefOn ? 'right' : 'left', toggleNotifPref: () => this.toggleNotifPref(),
+      refreshCatalog: () => this.refreshCatalog(),
+      familyToggleBg: familyMode ? '#FF5A2D' : '#2A2A32', familyTogglePos: familyMode ? 'right' : 'left', toggleFamilyMode: () => this.toggleFamilyMode(),
+      platformInsights, hasPlatformInsights: platformInsights.length > 0
+    };
+  }
+}
+
+</script>
+</body>
+</html>
